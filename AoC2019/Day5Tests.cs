@@ -17,7 +17,7 @@ namespace AoC2019Test
 
             var d = new IntCodeComputer(new[] { 3, 0, 4, 0, 99 });
 
-            d.Execute(new[] { 4 });
+            d.Execute(new List<int> { 4 });
             Console.WriteLine($"output = {string.Join(',', d.Output)}");
         }
 
@@ -26,7 +26,6 @@ namespace AoC2019Test
         public void TestGetArg()
         {
             var d = new IntCodeComputer(new[] { 1, 2, 3, 4 });
-            d.Memory = d.Program.ToArray();
             Assert.AreEqual(d.GetArgImmediate(1), 2);
             Assert.AreEqual(d.GetArg(1), 3);
         }
@@ -35,7 +34,6 @@ namespace AoC2019Test
         public void TestAdd()
         {
             var d = new IntCodeComputer(new[] { 1101, 2, 3, 0 });
-            d.Memory = d.Program.ToArray();
             d.Add();
             Console.WriteLine(string.Join(",", d.Memory));
             Assert.AreEqual(5, d.Memory[0]);
@@ -45,12 +43,17 @@ namespace AoC2019Test
         public void TestProgram1()
         {
             var d = new IntCodeComputer(new[] { 3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8 });
-        
-            d.Execute(new[] { 8 });
+
+            d.Execute(new List<int> { 8 });
             Console.WriteLine($"output = {string.Join(',', d.Output)}");
             Assert.AreEqual(1, d.Output[0]);
+        }
 
-            d.Execute(new[] { 4 });
+        [Test]
+        public void TestProgram2()
+        {
+            var d = new IntCodeComputer(new[] { 3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8 });
+            d.Execute(new List<int> { 4 });
             Console.WriteLine($"output = {string.Join(',', d.Output)}");
             Assert.AreEqual(0, d.Output[0]);
         }

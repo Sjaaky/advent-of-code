@@ -8,35 +8,32 @@ namespace AoC2019Test
     public class IntCodeComputer
     {
         public int[] Memory;
-        public int[] Program;
         public List<int> Output;
 
         int Ip;
         int InputPointer;
 
-        public IntCodeComputer(int[] program)
+        public IntCodeComputer(int[] program, bool returnOnOutput = false)
         {
-            Program = program;
+            Memory = program.ToArray();
+            Ip = 0;
+            InputPointer = 0;
+            Output = new List<int>();
+            ReturnOnOutput = returnOnOutput;
         }
 
         public void SetNounAndVerb(int noun, int verb)
         {
-            Program[1] = noun;
-            Program[2] = verb;
+            Memory[1] = noun;
+            Memory[2] = verb;
         }
 
-        public int Execute(int[] input = null)
+        public int Execute(List<int> input = null)
         {
-            Memory = Program.ToArray();
-            Ip = 0;
-            InputPointer = 0;
-            Output = new List<int>();
-
             int opcode;
             do
             {
                 opcode = Memory[Ip] % 100;
-                Debug.WriteLine($"ip = {Ip} opcode={Memory[Ip]}");
 
                 switch (opcode)
                 {
@@ -62,31 +59,30 @@ namespace AoC2019Test
                         throw new Exception($"unknown opcode {opcode} @{Ip}");
                 }
             }
-            while (opcode != 99);
-
+            while (opcode != 99 && (!ReturnOnOutput || opcode != 4));
+            if (opcode == 99) IsHalted = true;
             return Memory[0];
         }
 
+        public bool IsHalted;
+
+        public bool ReturnOnOutput { get; }
+
         public void Add()
         {
-            Debug.WriteLine($"Add {GetArg(1)}+{GetArg(2)} = { GetArg(1) + GetArg(2)} => {GetArgImmediate(3)}");
-            
             Memory[GetArgImmediate(3)] = GetArg(1) + GetArg(2);
             Ip += 4;
         }
 
         public void Mul()
         {
-            Debug.WriteLine($"Mul {GetArg(1)}x{GetArg(2)} = { GetArg(1) * GetArg(2)} => {GetArgImmediate(3)}");
-            
             Memory[GetArgImmediate(3)] = GetArg(1) * GetArg(2);
             Ip += 4;
         }
 
-        public void In(int[] input)
+        public void In(List<int> input)
         {
-            if (input == null || InputPointer >= input.Length) throw new Exception("Input is empty");
-            Debug.WriteLine($"In {input[InputPointer]} => {GetArgImmediate(1)}");
+            if (input == null || InputPointer >= input.Count) throw new Exception($"Input is empty {string.Join(",", input)}, {InputPointer}");
          
             Memory[GetArgImmediate(1)] = input[InputPointer];
             InputPointer++;
@@ -95,8 +91,6 @@ namespace AoC2019Test
 
         public void Out()
         {
-            Debug.WriteLine($"Out {GetArg(1)}");
-            
             Output.Add(GetArg(1));
             Ip += 2;
         }

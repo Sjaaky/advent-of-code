@@ -33,7 +33,6 @@ namespace AoC2019Test
                 .SelectMany(s => s.Split(',', StringSplitOptions.RemoveEmptyEntries))
                 .Select(int.Parse)
                 .ToArray();
-            var computer = new IntCodeComputer(program);
 
             int noun = 0;
             int verb = 0;
@@ -42,6 +41,7 @@ namespace AoC2019Test
             {
                 for (verb = 0; verb < 99; verb++)
                 {
+                    var computer = new IntCodeComputer(program);
                     computer.SetNounAndVerb(noun, verb);
                     if (computer.Execute() == 19690720)
                     {

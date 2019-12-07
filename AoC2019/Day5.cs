@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace AoC2019Test
                 .Select(int.Parse)
                 .ToArray();
             var p = new IntCodeComputer(program);
-            var result = p.Execute(new[] { 1 });
+            var result = p.Execute(new List<int> { 1 });
 
             Console.WriteLine(result);
             Console.WriteLine($"output = {string.Join(',', p.Output)}");
@@ -34,7 +35,7 @@ namespace AoC2019Test
                 .Select(int.Parse)
                 .ToArray();
             var p = new IntCodeComputer(program);
-            var result = p.Execute(new[] { 5 });
+            var result = p.Execute(new List<int> { 5 });
 
             Console.WriteLine(result);
             Console.WriteLine($"output = {string.Join(',', p.Output)}");
