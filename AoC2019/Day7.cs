@@ -1,11 +1,8 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using static AoC2019Test.Util;
 
 namespace AoC2019Test
@@ -20,13 +17,7 @@ namespace AoC2019Test
                 .Select(int.Parse)
                 .ToArray();
 
-            int maxThrust = 0;
-            foreach (var ps in AllPhaseSettings(0, 5))
-            {
-                Console.WriteLine($"Test with {string.Join(",", ps)}");
-                var t = Amplifiers(program, ps);
-                if (t > maxThrust) maxThrust = t;
-            }
+            var maxThrust = AllPhaseSettings(0, 5).Max(ps => Amplifiers(program, ps));
 
             Console.WriteLine($"{maxThrust}");
             Assert.AreEqual(19650, maxThrust);
@@ -54,13 +45,8 @@ namespace AoC2019Test
                 .Select(int.Parse)
                 .ToArray();
 
-            int maxThrust = 0;
-            foreach (var ps in AllPhaseSettings(5, 10))
-            {
-                Console.WriteLine($"Test with {string.Join(",", ps)}");
-                var t = AmplifiersWithFeedBack(program, ps);
-                if (t > maxThrust) maxThrust = t;
-            }
+            var maxThrust = AllPhaseSettings(5, 10).Max(ps => AmplifiersWithFeedBack(program, ps));
+
             Assert.AreEqual(35961106, maxThrust);
             Console.WriteLine($"{maxThrust}");
         }
@@ -90,11 +76,10 @@ namespace AoC2019Test
         private IEnumerable<int[]> AllPhaseSettings(int min, int max)
         {
             int[] ps = new int[5];
-
-            for (ps[0] = min; ps[0] < max; ps[0]++, ps[1] = min)
-                for (ps[1] = min; ps[1] < max; ps[1]++, ps[2] = min)
-                    for (ps[2] = min; ps[2] < max; ps[2]++, ps[3] = min)
-                        for (ps[3] = min; ps[3] < max; ps[3]++, ps[4] = min)
+            for (ps[0] = min; ps[0] < max; ps[0]++)
+                for (ps[1] = min; ps[1] < max; ps[1]++)
+                    for (ps[2] = min; ps[2] < max; ps[2]++)
+                        for (ps[3] = min; ps[3] < max; ps[3]++)
                             for (ps[4] = min; ps[4] < max; ps[4]++)
                             {
                                 if (ps.GroupBy(p => p).All(g => g.Count() <= 1))

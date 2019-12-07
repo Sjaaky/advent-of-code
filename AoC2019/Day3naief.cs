@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using static AoC2019Test.Util;
 
 namespace AoC2019Test
@@ -59,64 +58,6 @@ namespace AoC2019Test
                     }
                 }
             }
-        }
-
-        public IEnumerable<Point> Intersections(Line w1, Line w2)
-        {
-            if (w1.A.X == w1.B.X && w2.A.Y == w2.B.Y && Between(w1.A.X, w2.A.X, w2.B.X) && Between(w2.A.Y, w1.A.Y, w1.B.Y))
-            {
-                return new [] { new Point(w1.A.X, w2.A.Y) };
-            }
-            else
-            if (w2.A.X == w2.B.X && w1.A.Y == w1.B.Y && Between(w2.A.X, w1.A.X, w1.B.X) && Between(w1.A.Y, w2.A.Y, w2.B.Y))
-            {
-                return new [] { new Point(w2.A.X, w1.A.Y) };
-            }
-            else
-            if (w1.A.X == w1.B.X && w2.A.X == w2.B.X && w1.A.X == w2.A.X)
-            {
-                // both lines have the same X coordinate.
-                var start1 = Math.Min(w1.A.Y, w1.B.Y);
-                var end1 = Math.Max(w1.A.Y, w1.B.Y);
-                var start2 = Math.Min(w2.A.Y, w2.B.Y);
-                var end2 = Math.Max(w2.A.Y, w2.B.Y);
-
-                if (Between(start1, start2, end2))
-                {
-                    return Range(start1, Math.Min(end1, end2)).Select(y => new Point(w1.A.X, y));
-                }
-                else
-                if (Between(end1, start2, end2))
-                {
-                    return Range(Math.Max(start1, start2), end1).Select(y => new Point(w1.A.X, y));
-                }
-            }
-            else
-            if (w1.A.Y == w1.B.Y && w2.A.Y == w2.B.Y && w1.A.Y == w2.A.Y)
-            {
-                // both lines have the same Y coordinate
-                var start1 = Math.Min(w1.A.X, w1.B.X);
-                var end1 = Math.Max(w1.A.X, w1.B.X);
-                var start2 = Math.Min(w2.A.X, w2.B.X);
-                var end2 = Math.Max(w2.A.X, w2.B.X);
-
-                if (Between(start1, start2, end2))
-                {
-                    return Range(start1, Math.Min(end1, end2)).Select(x => new Point(x, w1.A.Y));
-                }
-                else
-                if (Between(end1, start2, end2))
-                {
-                    return Range(Math.Max(start1, start2), end1).Select(x => new Point(x, w1.A.Y));
-                }
-            }
-
-            return Enumerable.Empty<Point>();
-        }
-
-        private bool Between(int x1, int end1, int end2)
-        {
-            return x1 >= Math.Min(end1, end2) && x1 <= Math.Max(end1, end2);
         }
 
         public IEnumerable<Line> ParseInput(string[] input)
