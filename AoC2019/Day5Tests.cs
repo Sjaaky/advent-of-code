@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using LanguageExt;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +18,7 @@ namespace AoC2019Test
 
             var d = new IntCodeComputer(new[] { 3, 0, 4, 0, 99 });
 
-            d.Execute(new List<int> { 4 });
+            d.Execute(new List<bigint> { 4 });
             Console.WriteLine($"output = {string.Join(',', d.Output)}");
         }
 
@@ -26,8 +27,8 @@ namespace AoC2019Test
         public void TestGetArg()
         {
             var d = new IntCodeComputer(new[] { 1, 2, 3, 4 });
-            Assert.AreEqual(d.GetArgImmediate(1), 2);
-            Assert.AreEqual(d.GetArg(1), 3);
+            Assert.AreEqual(2, (int)d.GetArgImmediate(1));
+            Assert.AreEqual(3, (int)d.GetArg(1));
         }
 
         [Test]
@@ -36,7 +37,7 @@ namespace AoC2019Test
             var d = new IntCodeComputer(new[] { 1101, 2, 3, 0 });
             d.Add();
             Console.WriteLine(string.Join(",", d.Memory));
-            Assert.AreEqual(5, d.Memory[0]);
+            Assert.AreEqual(5, (int)d.Memory[0]);
         }
 
         [Test]
@@ -44,18 +45,18 @@ namespace AoC2019Test
         {
             var d = new IntCodeComputer(new[] { 3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8 });
 
-            d.Execute(new List<int> { 8 });
+            d.Execute(new List<bigint> { 8 });
             Console.WriteLine($"output = {string.Join(',', d.Output)}");
-            Assert.AreEqual(1, d.Output[0]);
+            Assert.AreEqual(1, (int)d.Output[0]);
         }
 
         [Test]
         public void TestProgram2()
         {
             var d = new IntCodeComputer(new[] { 3, 9, 8, 9, 10, 9, 4, 9, 99, -1, 8 });
-            d.Execute(new List<int> { 4 });
+            d.Execute(new List<bigint> { 4 });
             Console.WriteLine($"output = {string.Join(',', d.Output)}");
-            Assert.AreEqual(0, d.Output[0]);
+            Assert.AreEqual(0, (int)d.Output[0]);
         }
     }
 }

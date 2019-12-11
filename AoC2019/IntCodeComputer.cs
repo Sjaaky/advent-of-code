@@ -1,4 +1,5 @@
-﻿using System;
+﻿using LanguageExt;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,19 +8,34 @@ namespace AoC2019Test
 {
     public class IntCodeComputer
     {
-        public int[] Memory;
-        public List<int> Output;
+        public bool IsHalted;
+        public bool ReturnOnOutput { get; }
+        public Dictionary<int, bigint> Memory;
+        public List<bigint> Output;
 
         int Ip;
         int InputPointer;
+        int RelativeOffset;
+
+        public IntCodeComputer(bigint[] program, bool returnOnOutput = false)
+            :this(returnOnOutput)
+        {
+            Memory = program.Select((i, v) => (i, v)).ToDictionary(kv => kv.Item2, kv => kv.Item1);
+        }
 
         public IntCodeComputer(int[] program, bool returnOnOutput = false)
+            :this(returnOnOutput)
         {
-            Memory = program.ToArray();
+            Memory = program.Select((i, v) => (i, v)).ToDictionary(kv => kv.Item2, kv => new bigint(kv.Item1));
+        }
+
+        private IntCodeComputer(bool returnOnOutput)
+        {
             Ip = 0;
             InputPointer = 0;
-            Output = new List<int>();
+            Output = new List<bigint>();
             ReturnOnOutput = returnOnOutput;
+            RelativeOffset = 0;
         }
 
         public void SetNounAndVerb(int noun, int verb)
@@ -28,12 +44,12 @@ namespace AoC2019Test
             Memory[2] = verb;
         }
 
-        public int Execute(List<int> input = null)
+        public bigint Execute(List<bigint> input = null)
         {
             int opcode;
             do
             {
-                opcode = Memory[Ip] % 100;
+                opcode = ((int)Memory[Ip]) % 100;
 
                 switch (opcode)
                 {
@@ -53,6 +69,8 @@ namespace AoC2019Test
                         break;
                     case 8: Eq();
                         break;
+                    case 9: SetRelativeOffset();
+                        break;
                     case 99: 
                         break;
                     default:
@@ -61,30 +79,32 @@ namespace AoC2019Test
             }
             while (opcode != 99 && (!ReturnOnOutput || opcode != 4));
             if (opcode == 99) IsHalted = true;
-            return Memory[0];
+            return GetMemory(0);
         }
 
-        public bool IsHalted;
-
-        public bool ReturnOnOutput { get; }
+        private void SetRelativeOffset()
+        {
+            RelativeOffset += (int)GetArg(1);
+            Ip += 2;
+        }
 
         public void Add()
         {
-            Memory[GetArgImmediate(3)] = GetArg(1) + GetArg(2);
+            SetMemory(GetArgImmediate(3), GetArg(1) + GetArg(2));
             Ip += 4;
         }
 
         public void Mul()
         {
-            Memory[GetArgImmediate(3)] = GetArg(1) * GetArg(2);
+            SetMemory(GetArgImmediate(3), GetArg(1) * GetArg(2));
             Ip += 4;
         }
 
-        public void In(List<int> input)
+        public void In(List<bigint> input)
         {
             if (input == null || InputPointer >= input.Count) throw new Exception($"Input is empty {string.Join(",", input)}, {InputPointer}");
          
-            Memory[GetArgImmediate(1)] = input[InputPointer];
+            SetMemory(GetArgImmediate(1), input[InputPointer]);
             InputPointer++;
             Ip += 2;
         }
@@ -99,7 +119,7 @@ namespace AoC2019Test
         {
             if (GetArg(1) != 0)
             {
-                Ip = GetArg(2);
+                Ip = (int)GetArg(2);
             }
             else
             {
@@ -111,7 +131,7 @@ namespace AoC2019Test
         {
             if (GetArg(1) == 0)
             {
-                Ip = GetArg(2);
+                Ip = (int)GetArg(2);
             }
             else
             {
@@ -121,37 +141,70 @@ namespace AoC2019Test
 
         private void LessThen()
         {
-            Memory[GetArgImmediate(3)] = (GetArg(1) < GetArg(2)) ? 1 : 0;
+            SetMemory(GetArgImmediate(3), (GetArg(1) < GetArg(2)) ? 1 : 0);
             Ip += 4;
         }
 
         private void Eq()
         {
-            Memory[GetArgImmediate(3)] = (GetArg(1) == GetArg(2)) ? 1 : 0;
+            SetMemory(GetArgImmediate(3), (GetArg(1) == GetArg(2)) ? 1 : 0);
             Ip += 4;
         }
 
-        public int GetArgImmediate(int offset)
+        public bigint GetArgImmediate(int offset)
         {
-            var value = Memory[Ip + offset];
-            return value;
-        }
-        
-        public int GetArg(int offset)
-        {
-            var value = Memory[Ip + offset];
-
             var modeDiv = new[] { 100, 1000, 10000, 100000 };
-            var paramMode = (Memory[Ip] / modeDiv[offset-1]) % 10;
+            var paramMode = (int)(Memory[Ip] / modeDiv[offset-1]) % 10;
+
             switch (paramMode)
             {
                 case 0:
-                    return Memory[value];
+                    return GetMemory(Ip + offset);
                 case 1:
-                    return value;
+                    throw new Exception($"other parammode {paramMode}");
+                case 2:
+                    var value = GetMemory(Ip + offset);
+                    return RelativeOffset + value;
                 default:
                     throw new Exception($"unknown parammode opcode={Memory[Ip]} offset={offset} paramMode={paramMode}");
             }
+        }
+        
+        public bigint GetArg(int offset)
+        {
+            var value = GetMemory(Ip + offset);
+
+            var modeDiv = new[] { 100, 1000, 10000, 100000 };
+            var paramMode = (int)(Memory[Ip] / modeDiv[offset-1]) % 10;
+            switch (paramMode)
+            {
+                case 0:
+                    return GetMemory(value);
+                case 1:
+                    return value;
+                case 2:
+                    return GetMemory(RelativeOffset + value);
+                default:
+                    throw new Exception($"unknown parammode opcode={Memory[Ip]} offset={offset} paramMode={paramMode}");
+            }
+        }
+
+        public bigint GetMemory(bigint absAddress)
+        {
+            if (absAddress > int.MaxValue) throw new IndexOutOfRangeException("addresses need to bigint as well");
+            var a = (int)absAddress;
+            if (!Memory.TryGetValue(a, out bigint value))
+            {
+                Memory[a] = 0;
+            }
+            return Memory[a];
+        }
+
+        public bigint SetMemory(bigint absAddress, bigint value)
+        {
+            if (absAddress > int.MaxValue) throw new IndexOutOfRangeException("addresses need to bigint as well");
+            var a = (int)absAddress;
+            return Memory[a] = value;
         }
     }
 }

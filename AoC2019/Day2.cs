@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using LanguageExt;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,7 +24,7 @@ namespace AoC2019Test
             var result = computer.Execute();
 
             Console.WriteLine(result);
-            Assert.AreEqual(3654868, result);
+            Assert.AreEqual(3654868, (int)result);
         }
 
         [Test]
@@ -37,7 +38,7 @@ namespace AoC2019Test
             int noun = 0;
             int verb = 0;
             bool done = false;
-            for(noun = 0; noun < 99; noun++)
+            for (noun = 0; noun < 99; noun++)
             {
                 for (verb = 0; verb < 99; verb++)
                 {
@@ -51,9 +52,9 @@ namespace AoC2019Test
                 }
                 if (done) break;
             }
+            var result = noun * 100 + verb;
 
             Assert.IsTrue(done);
-            var result = noun * 100 + verb;
             Console.WriteLine(result);
             Assert.AreEqual(7014, result);
         }

@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using LanguageExt;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,12 +20,12 @@ namespace AoC2019Test
                 .Select(int.Parse)
                 .ToArray();
             var p = new IntCodeComputer(program);
-            var result = p.Execute(new List<int> { 1 });
+            var result = p.Execute(new List<bigint> { 1 });
 
             Console.WriteLine(result);
             Console.WriteLine($"output = {string.Join(',', p.Output)}");
 
-            Assert.AreEqual(7265618, p.Output.Last());
+            Assert.AreEqual(7265618, (int)p.Output.Last());
         }
 
         [Test]
@@ -35,12 +36,12 @@ namespace AoC2019Test
                 .Select(int.Parse)
                 .ToArray();
             var p = new IntCodeComputer(program);
-            var result = p.Execute(new List<int> { 5 });
+            var result = p.Execute(new List<bigint> { 5 });
 
             Console.WriteLine(result);
             Console.WriteLine($"output = {string.Join(',', p.Output)}");
         
-            Assert.AreEqual(7731427, p.Output[0]);
+            Assert.AreEqual(7731427, (int)p.Output[0]);
         }
     }
 }

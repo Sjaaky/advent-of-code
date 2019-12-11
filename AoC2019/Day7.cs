@@ -1,4 +1,5 @@
-﻿using NUnit.Framework;
+﻿using LanguageExt;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -25,16 +26,15 @@ namespace AoC2019Test
 
         public int Amplifiers(int[] program, int[] phaseSettings)
         {
-            var signal = 0;
+            bigint signal = 0;
             for (int i = 0; i < phaseSettings.Length; i++)
             {
                 var p = new IntCodeComputer(program);
-                p.Execute(new[] { phaseSettings[i], signal }.ToList());
-                Console.WriteLine($"Step {i} {phaseSettings[i]} {signal} => {string.Join(",", p.Output)}");
+                p.Execute(new List<bigint> { phaseSettings[i], signal });
                 signal = p.Output.First();
             }
             Console.WriteLine($"Phasesetting {string.Join(",", phaseSettings)} => {signal}");
-            return signal;
+            return (int)signal;
         }
 
         [Test]
@@ -54,9 +54,9 @@ namespace AoC2019Test
         public int AmplifiersWithFeedBack(int[] program, int[] phaseSettings)
         {
             IntCodeComputer[] p = Range(0, 4).Select(_ => new IntCodeComputer(program, true)).ToArray();
-            List<int>[] inputs = Range(0, 4).Select(i => new List<int>() { phaseSettings[i] }).ToArray();
+            List<bigint>[] inputs = Range(0, 4).Select(i => new List<bigint>() { phaseSettings[i] }).ToArray();
 
-            var signal = 0;
+            bigint signal = 0;
             int iter = 0;
             while (!p[4].IsHalted)
             {
@@ -64,13 +64,12 @@ namespace AoC2019Test
                 {
                     inputs[i].Add(signal);
                     p[i].Execute(inputs[i]);
-                    Console.WriteLine($"Step {iter} {i} {phaseSettings[i]} {signal} => {string.Join(",", p[i].Output)}");
                     signal = p[i].Output.Last();
                 }
                 iter++;
             }
             Console.WriteLine($"Phasesetting iters{iter} {string.Join(",", phaseSettings)} => {signal}");
-            return signal;
+            return (int)signal;
         }
 
         private IEnumerable<int[]> AllPhaseSettings(int min, int max)
