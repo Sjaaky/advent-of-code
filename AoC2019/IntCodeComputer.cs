@@ -103,8 +103,8 @@ namespace AoC2019Test
         public void In(List<bigint> input)
         {
             if (input == null || InputPointer >= input.Count) throw new Exception($"Input is empty {string.Join(",", input)}, {InputPointer}");
-         
             SetMemory(GetArgImmediate(1), input[InputPointer]);
+            //Console.WriteLine("read input");
             InputPointer++;
             Ip += 2;
         }

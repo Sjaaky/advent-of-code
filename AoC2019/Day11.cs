@@ -73,6 +73,7 @@ namespace AoC2019Test
             var width = area.Max(c => c.Key.x) - minx + 1;
             var height = area.Max(c => c.Key.y) - miny + 1;
             int[,] hull = new int[width, height];
+
             foreach (var p in area)
             {
                 hull[p.Key.x - minx, p.Key.y - miny] = p.Value;
