@@ -14,9 +14,9 @@ namespace AoCCmd
             d.Part2();
         }
         static void Main(string[] args)
-
         {
-            var d = new Day12();
+            var d = new Day18();
+            d.Part1();
 
             //List<Day12.Body> bodies;
             //HashSet<string> occ;
