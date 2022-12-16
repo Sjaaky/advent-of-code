@@ -13,42 +13,22 @@ using static AoC2019Test.Util;
 namespace AoC2019Test
 {
 
-    public class Day18
+    public class Day18p2
     {
         [Test]
-        public void Part1()
+        public void Part2()
         {
-            var (area, pois) = Input("day18.input");
+            var (area, pois) = Input("day18_2.input");
             var r = DoIt(area, pois);
+            Assert.AreEqual(2082, r);
             Console.WriteLine(r);
         }
 
         [Test]
-        public void Part1t1()
+        public void Part2t1()
         {
-            var (area, pois) = Input("day18.test1.input");
-            Assert.AreEqual(86, DoIt(area, pois));
-        }
-
-        [Test]
-        public void Part1t2()
-        {
-            var (area, pois) = Input("day18.test2.input");
-            Assert.AreEqual(132, DoIt(area, pois));
-        }
-
-        [Test]
-        public void Part1t3()
-        {
-            var (area, pois) = Input("day18.test3.input");
-            Assert.AreEqual(81, DoIt(area, pois));
-        }
-
-        [Test]
-        public void Part1t4()
-        {
-            var (area, pois) = Input("day18.test4.input");
-            Assert.AreEqual(136, DoIt(area, pois));
+            var (area, pois) = Input("day18_2.test1.input");
+            Assert.AreEqual(8, DoIt(area, pois));
         }
 
         private int DoIt(Dictionary<(int x, int y), char> area, Dictionary<char, (int x, int y)> pois)
@@ -56,16 +36,20 @@ namespace AoC2019Test
             DrawHull(area);
             var edges = new Dictionary<char, List<Edge>>();
 
-            foreach (var poi in pois.Where(p => char.IsLower(p.Key) || p.Key == '@'))
+            foreach (var poi in pois.Where(p => char.IsLower(p.Key) || char.IsDigit(p.Key)))
             {
                 var edge1 = DistanceTo(area, (poi.Key, poi.Value.x, poi.Value.y));
                 edges[poi.Key] = edge1.OrderBy(e => e.distance).ToList();
                 ClearMap(area, pois);
             }
-
-            var s = new State { dist = 0, currentLocation = ('@', pois['@'].x, pois['@'].y), keys = new List<char>() };
             var current = new MySortedSet();
-            current.Add(s);
+
+            var l1 = ('1', pois['1'].x, pois['1'].y);
+            var l2 = ('2', pois['2'].x, pois['2'].y);
+            var l3 = ('3', pois['3'].x, pois['3'].y);
+            var l4 = ('4', pois['4'].x, pois['4'].y);
+            var s1 = new State { dist = 0, l = new[] { l1, l2, l3, l4 }, keys = new List<char>() };
+            current.Add(s1);
             return FindRoute(edges, current, pois.Count(p => char.IsLower(p.Key)));
         }
 
@@ -76,7 +60,7 @@ namespace AoC2019Test
                 var c = current.Pop();
                 if (c == null)
                 {
-                    Console.WriteLine("DON!");
+                    Console.WriteLine("DONE but no answer");
                     return -1;
                 }
 
@@ -87,27 +71,36 @@ namespace AoC2019Test
                 }
 
                 List<char> visited = new List<char>();
-                var edgesarr = edges[c.currentLocation.poi].Where(p => p.p2.Item1 != c.currentLocation.poi && !c.keys.Contains(p.p2.Item1)).ToArray();
-                foreach (var n in edgesarr)
+                int edgesToGo = 0;
+                for (int i = 0; i < 4; i++)
                 {
-                    if (n.deps.Count(d => d == c.currentLocation.poi || c.keys.Contains(d)) != n.deps.Count()) continue;
-
-                    visited.Add(n.p2.Item1);
-
-                    List<char> keys2 = c.keys.ToList();
-                    foreach(var k in n.keys)
+                    var edgesarr = edges[c.l[i].poi].Where(p => p.p2.Item1 != c.l[i].poi && !c.keys.Contains(p.p2.Item1)).ToArray();
+                    edgesToGo += edgesarr.Length;
+                    foreach (var n in edgesarr)
                     {
-                        if (!keys2.Contains(k))
-                            keys2.Add(k);
+                        if (n.deps.Count(d => d == c.l[i].poi || c.keys.Contains(d)) != n.deps.Count()) continue;
+
+                        visited.Add(n.p2.Item1);
+
+                        List<char> keys2 = c.keys.ToList();
+                        foreach (var k in n.keys)
+                        {
+                            if (!keys2.Contains(k))
+                                keys2.Add(k);
+                        }
+                        if (char.IsLower(c.l[i].poi) && !keys2.Contains(c.l[i].poi))
+                            keys2.Add(c.l[i].poi);
+                        if (!keys2.Contains(n.p2.Item1))
+                            keys2.Add(n.p2.Item1);
+
+                        var locs = c.l.ToArray();
+                        locs[i] = n.p2;
+                        var s = new State { dist = c.dist + n.distance, l = locs, keys = keys2 };
+                        current.Add(s);
                     }
-                    if (char.IsLower(c.currentLocation.poi) && !keys2.Contains(c.currentLocation.poi))
-                        keys2.Add(c.currentLocation.poi);
 
-
-                    var s = new State { dist = c.dist + n.distance, currentLocation = n.p2, keys = keys2 };
-                    current.Add(s);
                 }
-                if (!edgesarr.Any())
+                if (edgesToGo == 0)
                 {
                     Console.WriteLine($"!!DONE {c}");
                     return c.dist;
@@ -118,21 +111,24 @@ namespace AoC2019Test
         public class State : IEquatable<State>
         {
             public int dist;
-            public (char poi, int x, int y) currentLocation;
+            public (char poi, int x, int y)[] l = new (char poi, int x, int y)[4];
             public List<char> keys;
 
             public override string ToString()
             {
-                return $"S: {GetHashCode()} {currentLocation} {dist}\t{string.Join(",",keys)}";
+                return $"S: {GetHashCode()} {l[0]} {l[1]} {l[2]} {l[3]} {dist}\t{string.Join(",",keys)}";
             }
 
-            public int Heuristic => dist + keys.Count * 50;
+            public int Heuristic => dist + keys.Count * 5;
 
             public bool Equals([AllowNull] State other)
             {
                 if (other is null) return false;
                 return (dist == other.dist &&
-                    currentLocation == other.currentLocation &&
+                    l[0] == other.l[0] &&
+                    l[1] == other.l[1] &&
+                    l[2] == other.l[2] &&
+                    l[3] == other.l[3] &&
                     !keys.Except(other.keys).Any() &&
                     !other.keys.Except(keys).Any());
             }
@@ -172,27 +168,6 @@ namespace AoC2019Test
             }
         }
 
-        internal class StateComparer : IComparer<Day18.State>
-        {
-
-            public int Compare([AllowNull] State x, [AllowNull] State other)
-            {
-                if (other == null) return 1;
-                if (object.ReferenceEquals(this, other)) return 0;
-
-                if (x.Heuristic > other.Heuristic) return 1;
-                if (x.Heuristic < other.Heuristic) return -1;
-
-                if (x.dist > other.dist) return 1;
-                if (x.dist < other.dist) return -1;
-                if (x.keys.Count > other.keys.Count) return -1;
-                if (x.keys.Count < other.keys.Count) return 1;
-                if (x.GetHashCode() < other.GetHashCode()) return -1;
-                return 1;
-            }
-        }
-
-
         public class Edge
         {
             public int distance;
@@ -211,7 +186,7 @@ namespace AoC2019Test
         {
             foreach (var loc in map.Keys.ToArray())
             {
-                if (map[loc] == '1')
+                if (map[loc] == VISITED)
                 {
                     map[loc] = '.';
                 }
@@ -222,11 +197,12 @@ namespace AoC2019Test
             }
         }
 
+        private const char VISITED = '!';
         private List<Edge> DistanceTo(Dictionary<(int x, int y), char> area, (char, int x, int y) e)
         {
             var edges = new List<Edge>();
             var result = new Dictionary<(char c, int x, int y), (int dist, List<char> deps, List<char> keys)>();
-            AllDists(area, new List<(int, int, List<char>, List<char>, char)>() { (e.x, e.y, new List<char>(), new List<char>(), '1') }, result, 0);
+            AllDists(area, new List<(int, int, List<char>, List<char>, char)>() { (e.x, e.y, new List<char>(), new List<char>(), VISITED) }, result, 0);
             foreach (var r in result)
             {
                 if (char.IsLower(r.Key.c) && r.Value.dist > 0)
@@ -245,7 +221,6 @@ namespace AoC2019Test
             return edges;
         }
 
-
         private (Dictionary<(int x, int y), char> area, Dictionary<char, (int x, int y)> poi)
                 Input(string filename)
         {
@@ -260,7 +235,7 @@ namespace AoC2019Test
                 {
                     area.Add((x, y), c);
                     var C = char.ToUpper(c);
-                    if (C >= 'A' && C <= 'Z' || C=='@')
+                    if (C >= 'A' && C <= 'Z' || char.IsDigit(C))
                     {
                         poi.Add(c, (x, y));
                     }
@@ -271,32 +246,6 @@ namespace AoC2019Test
 
             return (area, poi);
         }
-
-       
-        //private int FindFastest(Dictionary<(int, int), int> map, List<(int, int)> current, int steps, (int, int) dest)
-        //{
-        //    var nextSteps = new List<(int, int)>();
-        //    foreach (var p in current)
-        //    {
-        //        map[p] = '@';
-        //        for (int i = 1; i < 5; i++)
-        //        {
-        //            var newp = updatePosition(p, i);
-        //            if (dest == newp)
-        //            {
-        //                return steps+1;
-        //            }
-        //            if (map[newp] != '#' && map[newp] != '@')
-        //            {
-        //                nextSteps.Add(newp);
-        //            }
-        //        } 
-        //    }
-        //    Console.CursorVisible = false;
-        //    Console.SetCursorPosition(0, 4);
-
-        //    return FindFastest(map, nextSteps, steps + 1, dest);
-        //}
 
         private int AllDists(Dictionary<(int, int), char> map, List<(int x, int y, List<char> dependencies, List<char> keys, char fill)> current, Dictionary<(char, int, int), (int, List<char> dependencies, List<char> keys)> dist, int steps)
         {
@@ -351,6 +300,8 @@ namespace AoC2019Test
             }
             throw new Exception($"no valid direction {dir}");
         }
+
+      
 
         private void DrawHull(Dictionary<(int x, int y), char> area)
         {

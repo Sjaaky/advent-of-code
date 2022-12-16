@@ -12,15 +12,18 @@ namespace AoC2019Test
         public bool ReturnOnOutput { get; }
         public Dictionary<int, bigint> Memory;
         public List<bigint> Output;
+        public int InstructionsExecuted = 0;
+        public int InputPointer;
 
         int Ip;
-        int InputPointer;
         int RelativeOffset;
+        Func<string> InputFunc;
 
-        public IntCodeComputer(bigint[] program, bool returnOnOutput = false)
+        public IntCodeComputer(bigint[] program, bool returnOnOutput = false, Func<string> input = null)
             :this(returnOnOutput)
         {
             Memory = program.Select((i, v) => (i, v)).ToDictionary(kv => kv.Item2, kv => kv.Item1);
+            InputFunc = input;
         }
 
         public IntCodeComputer(int[] program, bool returnOnOutput = false)
@@ -44,13 +47,18 @@ namespace AoC2019Test
             Memory[2] = verb;
         }
 
-        public bigint Execute(List<bigint> input = null)
+        public bigint Execute(List<bigint> input = null, int stepsToRun = -1)
         {
             int opcode;
+            int steps = 0;
             do
             {
+                if (input == null || InputPointer < input.Count)
+                {
+                    idleCounter = 0;
+                }
                 opcode = ((int)Memory[Ip]) % 100;
-
+                InstructionsExecuted++;
                 switch (opcode)
                 {
                     case 1: Add();
@@ -76,8 +84,9 @@ namespace AoC2019Test
                     default:
                         throw new Exception($"unknown opcode {opcode} @{Ip}");
                 }
+                steps++;
             }
-            while (opcode != 99 && (!ReturnOnOutput || opcode != 4));
+            while (opcode != 99 && (!ReturnOnOutput || opcode != 4) && (stepsToRun == -1 || steps < stepsToRun));
             if (opcode == 99) IsHalted = true;
             return GetMemory(0);
         }
@@ -100,18 +109,48 @@ namespace AoC2019Test
             Ip += 4;
         }
 
+        int idleCounter = 0;
+        public bool IsIdle => idleCounter > 1;
+
+        private string inputBuf = null;
         public void In(List<bigint> input)
         {
-            if (input == null || InputPointer >= input.Count) throw new Exception($"Input is empty {string.Join(",", input)}, {InputPointer}");
-            SetMemory(GetArgImmediate(1), input[InputPointer]);
-            //Console.WriteLine("read input");
-            InputPointer++;
+            if (InputFunc != null)
+            {
+                if (string.IsNullOrEmpty(inputBuf))
+                {
+                    inputBuf = InputFunc();
+                }
+                else
+                {
+                    SetMemory(GetArgImmediate(1), inputBuf[0]);
+                    inputBuf = inputBuf.Substring(1);
+                    idleCounter = 0;
+                }
+            }
+            else
+            {
+                if (input == null || InputPointer >= input.Count)
+                {
+                    SetMemory(GetArgImmediate(1), -1);
+                    idleCounter++;
+                }
+                else
+                {
+                    //throw new Exception($"Input is empty {string.Join(",", input)}, {InputPointer}");
+                    SetMemory(GetArgImmediate(1), input[InputPointer]);
+                    //Console.WriteLine("read input");
+                    InputPointer++;
+                    idleCounter = 0;
+                }
+            }
             Ip += 2;
         }
 
         public void Out()
         {
             Output.Add(GetArg(1));
+            idleCounter = 0;
             Ip += 2;
         }
 
