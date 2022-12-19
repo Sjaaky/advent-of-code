@@ -21,6 +21,25 @@ public record Position(int X, int Y)
      => X >= 0 && X < arr.GetLength(0) && Y >= 0 && Y < arr.GetLength(1);
 }
 
+public record Position3(int X, int Y, int Z)
+{
+    public static Position3 Empty { get; } = new Position3(int.MinValue, int.MinValue, int.MinValue);
+
+    public Position3 Add(Direction3 d) => new Position3(X + d.Dx, Y + d.Dy, Z + d.Dz);
+    public Position3 Sub(Direction3 d) => new Position3(X - d.Dx, Y - d.Dy, Z - d.Dz);
+
+    public T Get<T>(T[,,] arr)
+     => arr[X, Y, Z];
+
+    public void Set<T>(T[,,] arr, T v)
+     => arr[X, Y, Z] = v;
+
+    public bool Within<T>(T[,,] arr)
+     => X >= 0 && X < arr.GetLength(0) 
+        && Y >= 0 && Y < arr.GetLength(1)
+        && Z >= 0 && Z < arr.GetLength(2);
+}
+
 public static class ArrExtensions
 {
     public static IEnumerable<Position> NeighboursOf<T>(this T[,] arr, Position current, IEnumerable<Direction> directions)
@@ -66,6 +85,7 @@ public static class ArrExtensions
     }
 }
 
+
 public record Direction(int Dx, int Dy)
 {
     public static Direction N = new(1, 0);
@@ -79,6 +99,23 @@ public record Direction(int Dx, int Dy)
     public static Direction[] All4 = new[] { N, E, S, W };
     public static Direction[] All8 = new[] { N, NE, E, SE, S, SW, W, NW };
 }
+
+public record Direction3(int Dx, int Dy, int Dz)
+{
+    public static Direction3 N = new(1, 0, 0);
+    public static Direction3 NW = new(1, -1, 0);
+    public static Direction3 NE = new(1, 1, 0);
+    public static Direction3 S = new(-1, 0, 0);
+    public static Direction3 SW = new(-1, -1, 0);
+    public static Direction3 SE = new(-1, 1, 0);
+    public static Direction3 W = new(0, -1, 0);
+    public static Direction3 E = new(0, 1, 0);
+    public static Direction3 D = new(0, 0, -1);
+    public static Direction3 U = new(0, 0, 1);
+
+    public static Direction3[] All6 = new[] { N, E, S, W, D, U };
+}
+
 
 public static class Arr
 {
