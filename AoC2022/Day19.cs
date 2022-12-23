@@ -210,10 +210,13 @@ public class Day19
         return quality;
     }
 
-    [TestCase("day19.input", 3, ExpectedResult = 5525990)] // 3.267 too low
-    [TestCase("day19example1.input", 1, ExpectedResult = 56)]
-    [TestCase("day19example1.input", 2, ExpectedResult = 56*62)]
-    public int Part2(string input, int take)
+    [TestCase("day19.input", 0, 3, ExpectedResult = 4257)] // 3.267 too low
+    //[TestCase("day19.input", 1, 2, ExpectedResult = 5525990)] // 3.267 too low
+    //[TestCase("day19.input", 2, 3, ExpectedResult = 5525990)] // 3.267 too low
+    [TestCase("day19example1.input", 0, 1, ExpectedResult = 56)]
+    [TestCase("day19example1.input", 1, 2, ExpectedResult = 62)]
+    [TestCase("day19example1.input", 2, 3, ExpectedResult = 62)]
+    public int Part2(string input, int from, int to)
     {
         var lines = File.ReadAllLines(input);
         var blueprints = new List<Blueprint>();
@@ -237,7 +240,7 @@ public class Day19
         }
         var timelimit = 32;
         var quality = 1;
-        foreach (var bp in blueprints.Take(3))
+        foreach (var bp in blueprints.Take(new Range(from, to)))
         {
             var stock = new Resources(0, 0, 0, 0);
             var producers = new Resources(1, 0, 0, 0);
@@ -246,7 +249,7 @@ public class Day19
             PriorityQueue<State, int> q = new();
             q.Enqueue(initialstate, 0);
             var geodeCracked = 1;
-            int runs = 100_000_000;
+            int runs = 1_000_000_000;
             int run = 0;
             while (q.TryDequeue(out var s, out int prio))
             {
@@ -260,10 +263,10 @@ public class Day19
                 if (s.time < timelimit)
                 {
                     var max = bp.maxToProduce(s, timelimit);
-                    if (max == 0 || (max < geodeCracked)) continue;
+                    if (max == 0 || max < geodeCracked) continue;
                     foreach (var next in s.Next(bp))
                     {
-                        var score = (s.stock.geode * bp.geodeValue) + bp.stockScore(next.stock) + bp.produceScore(next.harvesters, timelimit - s.time);
+                        var score = (s.stock.geode * bp.geodeValue * 10) + bp.stockScore(next.stock) + bp.produceScore(next.harvesters, timelimit - s.time) * 3;
                         q.Enqueue(next, -score);
                     }
                 }

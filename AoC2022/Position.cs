@@ -88,16 +88,53 @@ public static class ArrExtensions
 
 public record Direction(int Dx, int Dy)
 {
-    public static Direction N = new(1, 0);
-    public static Direction NW = new(1, -1);
-    public static Direction NE = new(1, 1);
-    public static Direction S = new(-1, 0);
-    public static Direction SW = new(-1, -1);
-    public static Direction SE = new(-1, 1);
+    public static Direction N = new(-1, 0);
+    public static Direction NW = new(-1, -1);
+    public static Direction NE = new(-1, 1);
+    public static Direction S = new(1, 0);
+    public static Direction SW = new(1, -1);
+    public static Direction SE = new(1, 1);
     public static Direction W = new(0, -1);
     public static Direction E = new(0, 1);
+    
     public static Direction[] All4 = new[] { N, E, S, W };
     public static Direction[] All8 = new[] { N, NE, E, SE, S, SW, W, NW };
+
+    public Direction TurnLeft()
+    {
+        if (this == N) return W;
+        if (this == W) return S;
+        if (this == S) return E;
+        if (this == E) return N;
+        throw new Exception("unknown direction");
+    }
+    public Direction TurnRight()
+    {
+        if (this == N) return E;
+        if (this == W) return N;
+        if (this == S) return W;
+        if (this == E) return S;
+        throw new Exception("unknown direction");
+    }
+
+    public Direction Opposite()
+    {
+        if (this == N) return S;
+        if (this == S) return N;
+        if (this == E) return W;
+        if (this == W) return E;
+        throw new Exception("unknown direction");
+    }
+
+    public char ToChar()
+    {
+        if (this == N) return '^';
+        if (this == S) return 'v';
+        if (this == E) return '>';
+        if (this == W) return '<';
+        throw new Exception("unknown direction");
+    }
+
 }
 
 public record Direction3(int Dx, int Dy, int Dz)
