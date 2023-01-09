@@ -1,12 +1,4 @@
-using FluentAssertions.Execution;
 using System.Text.RegularExpressions;
-using System;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using static System.Net.Mime.MediaTypeNames;
-using System.Numerics;
-using System.Diagnostics;
 
 namespace AoC2022;
 
@@ -30,7 +22,7 @@ public class Day19
         Obsidian,
         Geode
     }
-    public record Resources(int ore, int clay, int obsidian, int geode)
+    public record struct Resources(int ore, int clay, int obsidian, int geode)
     {
         public int ore { get; set; } = ore;
         public int clay { get; set; } = clay;
@@ -44,14 +36,18 @@ public class Day19
 
         internal Resources Harvest(Resources producers)
          => new Resources(ore + producers.ore, clay + producers.clay, obsidian + producers.obsidian, geode + producers.geode);
+
+        internal Resources Reverse(Resources producers)
+         => new Resources(ore - producers.ore, clay - producers.clay, obsidian - producers.obsidian, geode - producers.geode);
     }
-    public record Robot(Resource type, Resources resourcesToBuild)
+
+    public record struct Robot(Resource type, Resources resourcesToBuild)
     {
         public bool CanBeBuild(Resources r)
-         => (r.ore >= resourcesToBuild.ore &&
-                r.clay >= resourcesToBuild.clay &&
-                r.obsidian >= resourcesToBuild.obsidian &&
-                r.geode >= resourcesToBuild.geode);
+         => r.ore >= resourcesToBuild.ore &&
+            r.clay >= resourcesToBuild.clay &&
+            r.obsidian >= resourcesToBuild.obsidian &&
+            r.geode >= resourcesToBuild.geode;
 
         public Resources Build(Resources r)
          => new Resources(
@@ -60,6 +56,7 @@ public class Day19
              r.obsidian - resourcesToBuild.obsidian,
              r.geode - resourcesToBuild.geode);
     }
+
     public class Blueprint
     {
         internal int id { get; init; }
@@ -83,13 +80,13 @@ public class Day19
         }
 
         public int stockScore(Resources stock)
-         => stock.ore * oreValue + stock.clay * clayValue * 2 + stock.obsidian * obsidianValue * 3 + stock.geode * geodeValue * 4;
+         => stock.ore * oreValue + stock.clay * clayValue * 3 + stock.obsidian * obsidianValue * 7 + stock.geode * geodeValue * 20;
 
         public int produceScore(Resources producer, int timeleft)
          => (producer.ore * oreValue * timeleft)
-            + (producer.clay * clayValue * timeleft) * 2
-            + (producer.obsidian * obsidianValue * timeleft) * 3
-            + (producer.geode * geodeValue * timeleft) * 4;
+            + (producer.clay * clayValue * timeleft) * 3
+            + (producer.obsidian * obsidianValue * timeleft) * 6
+            + (producer.geode * geodeValue * timeleft) * 20;
 
         public int oreValue { get; init; }
         public int clayValue { get; init; }
@@ -129,7 +126,7 @@ public class Day19
                 var new_harvester_clay = amount_ore / clay.resourcesToBuild.ore;
                 if (new_harvester_clay > 0)
                 {
-                    //amount_ore -= new_harvester_clay * clay.resourcesToBuild.ore; ;
+                    //amount_ore -= new_harvester_clay * clay.resourcesToBuild.ore;
                 }
                 amount_clay += harvester_clay;
                 harvester_clay += new_harvester_clay;
@@ -137,7 +134,7 @@ public class Day19
                 var new_harvester_ore = amount_ore / ore.resourcesToBuild.ore;
                 if (new_harvester_ore > 0)
                 {
-                    //amount_ore -= newore * ore.resourcesToBuild.ore;
+                    //amount_ore -= new_harvester_ore * ore.resourcesToBuild.ore;
                 }
                 amount_ore += harvester_ore;
                 harvester_ore += new_harvester_ore;
@@ -146,31 +143,41 @@ public class Day19
         }
     }
 
+    public record struct State(int time, Resources stock, Resources harvesters)
+    {
+        public IEnumerable<State> Next(Blueprint bp)
+        {
+            var prev = stock.Reverse(harvesters);
+
+            if (bp.ore.CanBeBuild(stock))
+            {
+                yield return new State(time + 1, bp.ore.Build(stock).Harvest(harvesters), harvesters.AddOreRobot());
+            }
+            if (bp.clay.CanBeBuild(stock))
+            {
+                yield return new State(time + 1, bp.clay.Build(stock).Harvest(harvesters), harvesters.AddClayRobot());
+            }
+            if (bp.obsidian.CanBeBuild(stock) )
+            {
+                yield return new State(time + 1, bp.obsidian.Build(stock).Harvest(harvesters), harvesters.AddObsidianRobot());
+            }
+            if (bp.geode.CanBeBuild(stock) )
+            {
+                yield return new State(time + 1, bp.geode.Build(stock).Harvest(harvesters), harvesters.AddGeodeRobot());
+            }
+            yield return new State(time + 1, stock.Harvest(harvesters), harvesters);
+        }
+    }
+
+
     Regex r = new Regex(@"Blueprint (?<id>[0-9]+): Each ore robot costs (?<ore_ore>[0-9]+) ore. Each clay robot costs (?<clay_ore>[0-9]+) ore. Each obsidian robot costs (?<obs_ore>[0-9]+) ore and (?<obs_clay>[0-9]+) clay. Each geode robot costs (?<geo_ore>[0-9]+) ore and (?<geo_obs>[0-9]+) obsidian.", RegexOptions.Compiled);
     [TestCase("day19.input", ExpectedResult = 1958)]
     [TestCase("day19example1.input", ExpectedResult = 33)]
     public int Part1(string input)
     {
         var lines = File.ReadAllLines(input);
-        var blueprints = new List<Blueprint>();
-        foreach (var line in lines)
-        {
-            var m = r.Match(line);
-            if (m.Success)
-            {
-                var bp = new Blueprint(AsInt(m, "id"),
-                    new Robot(Resource.Ore, new Resources(AsInt(m, "ore_ore"), 0, 0, 0)),
-                    new Robot(Resource.Clay, new Resources(AsInt(m, "clay_ore"), 0, 0, 0)),
-                    new Robot(Resource.Obsidian, new Resources(AsInt(m, "obs_ore"), AsInt(m, "obs_clay"), 0, 0)),
-                    new Robot(Resource.Geode, new Resources(AsInt(m, "geo_ore"), 0, AsInt(m, "geo_obs"), 0))
-                    );
-                blueprints.Add(bp);
-            }
-            else
-            {
-                throw new Exception(line);
-            }
-        }
+        List<Blueprint> blueprints = ParseInput(lines);
+
         var timelimit = 24;
         var quality = 0;
         foreach (var bp in blueprints)
@@ -180,13 +187,13 @@ public class Day19
 
             var initialstate = new State(0, stock, producers);
             PriorityQueue<State, int> q = new();
+            HashSet<State> done = new(); 
             q.Enqueue(initialstate, 0);
             var geodeCracked = 0;
-            int runs = 10_000_000;
             int run = 0;
             while (q.TryDequeue(out var s, out int prio))
             {
-                if (run++ >= runs) break;
+                run++;
                 if (geodeCracked < s.stock.geode)
                 {
                     geodeCracked = s.stock.geode;
@@ -199,8 +206,11 @@ public class Day19
                     if (max == 0 || max < geodeCracked) continue;
                     foreach (var next in s.Next(bp))
                     {
-                        var score = (s.stock.geode * bp.geodeValue * 10) + bp.stockScore(next.stock) + bp.produceScore(next.harvesters, timelimit - s.time) * 3;
-                        q.Enqueue(next, -score);
+                        if (!done.Contains(next))
+                        {
+                            done.Add(next); var score = (s.stock.geode * bp.geodeValue * 10) + bp.stockScore(next.stock) + bp.produceScore(next.harvesters, timelimit - s.time) * 3;
+                            q.Enqueue(next, -score);
+                        }
                     }
                 }
             }
@@ -210,15 +220,77 @@ public class Day19
         return quality;
     }
 
+    [Test()]
+    public void Part2Profile()
+    {
+        Part2("day19example1.input", 0, 2);
+    }
+
     [TestCase("day19.input", 0, 3, ExpectedResult = 4257)] // 3.267 too low
-    //[TestCase("day19.input", 1, 2, ExpectedResult = 5525990)] // 3.267 too low
-    //[TestCase("day19.input", 2, 3, ExpectedResult = 5525990)] // 3.267 too low
-    [TestCase("day19example1.input", 0, 1, ExpectedResult = 56)]
-    [TestCase("day19example1.input", 1, 2, ExpectedResult = 62)]
-    [TestCase("day19example1.input", 2, 3, ExpectedResult = 62)]
+    //[TestCase("day19example1.input", 0, 1, ExpectedResult = 56)]
+    //[TestCase("day19example1.input", 1, 2, ExpectedResult = 62)]
+    [TestCase("day19example1.input", 0, 2, ExpectedResult = 3472)]
     public int Part2(string input, int from, int to)
     {
         var lines = File.ReadAllLines(input);
+        List<Blueprint> blueprints = ParseInput(lines);
+        var timelimit = 32;
+        var quality = 1;
+        foreach (var bp in blueprints.Take(new Range(from, to)))
+        {
+            var stock = new Resources(0, 0, 0, 0);
+            var producers = new Resources(1, 0, 0, 0);
+
+            var initialstate = new State(0, stock, producers);
+            PriorityQueue<State, int> q = new();
+            HashSet<State> done = new();
+            q.Enqueue(initialstate, 0);
+            var geodeCracked = 0;
+            long killed = 0;
+            long run = 0;
+            long alreadyqueued = 0;
+            while (q.TryDequeue(out var s, out int prio))
+            {
+                run++;
+                if (geodeCracked < s.stock.geode)
+                {
+                    geodeCracked = s.stock.geode;
+                    Console.WriteLine($"time {s.time} stock {s.stock} producers {s.harvesters} run {run}");
+                   // run = 0;
+                }
+                if (s.time < timelimit)
+                {
+                    var max = bp.maxToProduce(s, timelimit);
+                    if (max == 0 || max < geodeCracked)
+                    {
+                        killed++;
+                        continue;
+                    }
+                    foreach (var next in s.Next(bp))
+                    {
+                        if (!done.Contains(next))
+                        {
+                            done.Add(next);
+                            var score = bp.stockScore(next.stock) + bp.produceScore(next.harvesters, timelimit - s.time);
+                            q.Enqueue(next, -score);
+                        }
+                        else
+                        {
+                            alreadyqueued++;
+                        }
+                    }
+                }
+            }
+            Console.WriteLine($"run {run} killed {killed} alreadyqueued {alreadyqueued}");
+            if (q.Count == 0) Console.WriteLine("queue empty");
+            Console.WriteLine($"bp {bp.id}: cracked {geodeCracked} runs {run}");
+            quality *= geodeCracked;
+        }
+        return quality;
+    }
+
+    private List<Blueprint> ParseInput(string[] lines)
+    {
         var blueprints = new List<Blueprint>();
         foreach (var line in lines)
         {
@@ -238,68 +310,8 @@ public class Day19
                 throw new Exception(line);
             }
         }
-        var timelimit = 32;
-        var quality = 1;
-        foreach (var bp in blueprints.Take(new Range(from, to)))
-        {
-            var stock = new Resources(0, 0, 0, 0);
-            var producers = new Resources(1, 0, 0, 0);
 
-            var initialstate = new State(0, stock, producers);
-            PriorityQueue<State, int> q = new();
-            q.Enqueue(initialstate, 0);
-            var geodeCracked = 1;
-            int runs = 1_000_000_000;
-            int run = 0;
-            while (q.TryDequeue(out var s, out int prio))
-            {
-                if (run++ >= runs) break;
-                if (geodeCracked < s.stock.geode)
-                {
-                    geodeCracked = s.stock.geode;
-                    Console.WriteLine($"time {s.time} stock {s.stock} producers {s.harvesters} run {run}");
-                    run = 0;
-                }
-                if (s.time < timelimit)
-                {
-                    var max = bp.maxToProduce(s, timelimit);
-                    if (max == 0 || max < geodeCracked) continue;
-                    foreach (var next in s.Next(bp))
-                    {
-                        var score = (s.stock.geode * bp.geodeValue * 10) + bp.stockScore(next.stock) + bp.produceScore(next.harvesters, timelimit - s.time) * 3;
-                        q.Enqueue(next, -score);
-                    }
-                }
-            }
-            if (q.Count == 0) Console.WriteLine("queue empty");
-            Console.WriteLine($"bp {bp.id}: cracked {geodeCracked} runs {run}");
-            quality *= geodeCracked;
-        }
-        return quality;
-    }
-    public record State(int time, Resources stock, Resources harvesters)
-    {
-        public IEnumerable<State> Next(Blueprint bp)
-        {
-            if (bp.ore.CanBeBuild(stock))
-            {
-                yield return new State(time + 1, bp.ore.Build(stock).Harvest(harvesters), harvesters.AddOreRobot());
-            }
-            if (bp.clay.CanBeBuild(stock))
-            {
-                yield return new State(time + 1, bp.clay.Build(stock).Harvest(harvesters), harvesters.AddClayRobot());
-            }
-            if (bp.obsidian.CanBeBuild(stock))
-            {
-                yield return new State(time + 1, bp.obsidian.Build(stock).Harvest(harvesters), harvesters.AddObsidianRobot());
-            }
-            if (bp.geode.CanBeBuild(stock))
-            {
-                yield return new State(time + 1, bp.geode.Build(stock).Harvest(harvesters), harvesters.AddGeodeRobot());
-            }
-            yield return new State(time + 1, stock.Harvest(harvesters), harvesters);
-        }
-
+        return blueprints;
     }
 
     int AsInt(Match m, int pos)

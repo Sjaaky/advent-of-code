@@ -9,6 +9,15 @@
     <IsPackable>false</IsPackable>
 
     <UserSecretsId>ca03ab43-3ee3-4880-bde7-c5c818379385</UserSecretsId>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>full</DebugType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -35,6 +44,12 @@
 
   <ItemGroup>
     <None Update="*.input">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="day17.blocks">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

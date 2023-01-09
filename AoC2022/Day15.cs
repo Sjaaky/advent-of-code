@@ -1,12 +1,8 @@
-using FluentAssertions.Execution;
-using System.Text.RegularExpressions;
-using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using static System.Net.Mime.MediaTypeNames;
-using System.Numerics;
-using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace AoC2022;
 

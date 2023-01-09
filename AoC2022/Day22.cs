@@ -160,7 +160,7 @@ public class Day22
         char[,] walk,
         Position start,
         IEnumerable<Instruction> instructions, 
-        Func<char[,], Position, Direction, Position, (Direction dir, Position next)> wrap
+        Func<char[,], Position, Direction, Position, int, (Direction dir, Position next)> wrap
         )
     {
         var cur = start;
@@ -178,7 +178,7 @@ public class Day22
                     {
                         Console.Write($"Wrap from {cur} {dir.ToChar()}");
                         var curdir = dir;
-                        (dir, next) = wrap(maze, cur, dir, next);
+                        (dir, next) = wrap(maze, cur, dir, next, 50);
                         //(dir, next) = Wrap1(maze, cur, dir, next);
                         Console.Write($" to {next} {dir.ToChar()}");
 
@@ -241,7 +241,7 @@ public class Day22
         Print(maze, walk);
         //Print(walk);
 
-        return CalcScore(instructions.Last().direction, cur);
+        return CalcScore(dir, cur);
     }
 
     private long CalcScore(Direction dir, Position cur)
@@ -249,7 +249,7 @@ public class Day22
         return (cur.X + 1) * 1000 + (cur.Y + 1) * 4 + DirectionValue(dir);
     }
 
-    private static (Direction dir, Position next) Wrap1(char[,] maze, Position cur, Direction dir, Position next)
+    private static (Direction dir, Position next) Wrap1(char[,] maze, Position cur, Direction dir, Position next, int dim)
     {
         var oppositeDirection = dir.Opposite();
         var nextopp = next;
@@ -262,181 +262,103 @@ public class Day22
         return (dir, next);
     }
 
-    private static (Direction dir, Position next) Wrap50(char[,] maze, Position cur, Direction dir, Position next)
+    private static IEnumerable<int> Boundaries(int dim)
     {
+        yield return 0; // oops made mistake with indexes.
+        for (int i = 0; i <= 200; i += 50)
+        {
+            yield return i - 1;
+            yield return i;
+        }
+    }
+    private static (Direction dir, Position next) Wrap50(char[,] maze, Position cur, Direction dir, Position next, int dim)
+    {
+        int[] boundaries = Boundaries(dim).ToArray();
         //wrap
         //1 -> 4 V
-        if (next.X is >= 0 and < 50 && next.Y is 49)
+        if (next.X >= boundaries[2] && next.X < boundaries[4] && next.Y == boundaries[3])
         {
-            next = new Position(149 - next.X, 0);
+            next = new Position(boundaries[7] - next.X, boundaries[2]);
             dir = dir.Opposite();
         }else
         //4 -> 1 V
-        if (next.X is >= 100 and < 150 && next.Y is -1)
+        if (next.X >= boundaries[6] && next.X < boundaries[8] && next.Y == boundaries[1])
         {
-            next = new Position(149 - next.X, 50);
+            next = new Position(boundaries[7] - next.X, boundaries[4]);
             dir = dir.Opposite();
         }else
         //1 -> 6 V
-        if (next.X is -1 && next.Y is >= 50 and < 100)
+        if (next.X == boundaries[1] && next.Y >= boundaries[4] && next.Y < boundaries[6])
         {
-            next = new Position(100 + cur.Y, 0);
+            next = new Position(boundaries[6] + cur.Y, boundaries[2]);
             dir = Direction.E;
         }else
         //6 -> 1 V
-        if (next.X is >= 150 and < 200 && next.Y is -1)
+        if (next.X >= boundaries[8] && next.X < boundaries[10] && next.Y == boundaries[1])
         {
-            next = new Position(0, next.X - 100);
+            next = new Position(boundaries[2], next.X - boundaries[6]);
             dir = Direction.S;
         }else
         //2 -> 6 V
-        if (next.X is -1 && next.Y is >= 100 and < 150)
+        if (next.X == boundaries[1] && next.Y >= boundaries[6] && next.Y < boundaries[8])
         {
-            next = new Position(199, next.Y - 100);
+            next = new Position(boundaries[9], next.Y - boundaries[6]);
         }else
         //6 -> 2 V
-        if (next.X is 200 && next.Y is >= 0 and < 50)
+        if (next.X == boundaries[10] && next.Y >= boundaries[2] && next.Y < boundaries[4])
         {
-            next = new Position(0, next.Y + 100);
+            next = new Position(boundaries[2], next.Y + boundaries[6]);
         }else
         //2 -> 5 V
-        if (next.X is >= 0 and < 50 && next.Y is 150)
+        if (next.X >= boundaries[2] && next.X < boundaries[4] && next.Y == boundaries[8])
         {
-            next = new Position(149 - next.X, 99);
+            next = new Position(boundaries[7] - next.X, boundaries[5]);
             dir = Direction.W;
         }else
         //5 -> 2 V
-        if (next.X is >= 100 and < 150 && next.Y is 100)
+        if (next.X >= boundaries[6] && next.X < boundaries[8] && next.Y == boundaries[6])
         {
-            next = new Position(149 - next.X, 149);
+            next = new Position(boundaries[7] - next.X, boundaries[7]);
             dir = Direction.W;
         }else
         //2 -> 3 V
-        if (next.X is 50 && next.Y is >= 100 and < 150)
+        if (next.X == boundaries[4] && next.Y >= boundaries[6] && next.Y < boundaries[8])
         {
-            next = new Position(next.Y - 50, 99);
+            next = new Position(next.Y - boundaries[4], boundaries[5]);
             dir = Direction.W;
         }else
         //3 -> 2 V
-        if (next.X is >= 50 and < 100 && next.Y is 100)
+        if (next.X >= boundaries[4] && next.X < boundaries[6] && next.Y == boundaries[6])
         {
-            next = new Position(49, next.X + 50);
+            next = new Position(boundaries[3], next.X + boundaries[4]);
             dir = Direction.N;
         }else
         //3 -> 4 V
-        if (next.X is >= 50 and < 100 && next.Y is 49)
+        if (next.X >= boundaries[4] && next.X < boundaries[6] && next.Y == boundaries[3])
         {
-            next = new Position(100, next.X - 50);
+            next = new Position(boundaries[6], next.X - boundaries[4]);
             dir = Direction.S;
         }else
         //4 -> 3 V
-        if (next.X is 99 && next.Y is >= 0 and < 50)
+        if (next.X == boundaries[5] && next.Y >= boundaries[2] && next.Y < boundaries[4])
         {
-            next = new Position(next.Y + 50, 50);
+            next = new Position(next.Y + boundaries[4], boundaries[4]);
             dir = Direction.E;
         }else
         //5 -> 6 V
-        if (next.X is 150 && next.Y is >= 50 and < 100)
+        if (next.X == boundaries[8] && next.Y >= boundaries[4] && next.Y < boundaries[6])
         {
-            next = new Position(next.Y + 100, 49);
+            next = new Position(next.Y + boundaries[6], boundaries[3]);
             dir = Direction.W;
         }else
         //6 -> 5 V
-        if (next.X is >= 150 and < 200 && next.Y is 50)
+        if (next.X >= boundaries[8] && next.X < boundaries[10] && next.Y == boundaries[4])
         {
-            next = new Position(149, next.X - 100);
+            next = new Position(boundaries[7], next.X - boundaries[6]);
             dir = Direction.N;
         }
         return (dir, next);
     }
-
-    //private static (Direction dir, Position next) Wrap4(char[,] maze, Position cur, Direction dir, Position next)
-    //{
-    //    //wrap
-    //    //1 -> 4
-    //    if (next.X is >= 0 and < 4 && next.Y is 3)
-    //    {
-    //        next = new Position(12 - cur.X, 0);
-    //        dir = dir.Opposite();
-    //    }
-    //    //4 -> 1
-    //    if (next.X is >= 8 and < 12 && next.Y is -1)
-    //    {
-    //        next = new Position(12 - cur.X, 3);
-    //        dir = dir.Opposite();
-    //    }
-    //    //1 -> 6
-    //    if (next.X is -1 && next.Y is >= 4 and < 8)
-    //    {
-    //        next = new Position(100 + cur.Y, 0);
-    //        dir = Direction.E;
-    //    }
-    //    //6 -> 1
-    //    if (next.X is >= 150 and < 200 && next.Y is -1)
-    //    {
-    //        next = new Position(0, cur.X - 100);
-    //        dir = Direction.S;
-    //    }
-    //    //2 -> 6
-    //    if (next.X is -1 && next.Y is >= 100 and < 150)
-    //    {
-    //        next = new Position(199, next.Y - 100);
-    //    }
-    //    //6 -> 2
-    //    if (next.X is 200 && next.Y is >= 0 and < 50)
-    //    {
-    //        next = new Position(0, cur.Y + 100);
-    //    }
-    //    //2 -> 5
-    //    if (next.X is >= 0 and < 50 && next.Y is 150)
-    //    {
-    //        next = new Position(150 - next.X, 99);
-    //        dir = dir.Opposite();
-    //    }
-    //    //5 -> 2
-    //    if (next.X is >= 100 and < 150 && next.Y is 100)
-    //    {
-    //        next = new Position(150 - next.X, 149);
-    //        dir = dir.Opposite();
-    //    }
-    //    //2 -> 3
-    //    if (next.X is 50 && next.Y is >= 100 and < 150)
-    //    {
-    //        next = new Position(next.Y, 99);
-    //        dir = Direction.W;
-    //    }
-    //    //3 -> 2
-    //    if (next.X is >= 50 and < 100 && next.Y is 100)
-    //    {
-    //        next = new Position(49, next.Y);
-    //        dir = Direction.N;
-    //    }
-    //    //3 -> 4
-    //    if (next.X is >= 50 and < 100 && next.Y is 49)
-    //    {
-    //        next = new Position(100, next.X - 50);
-    //        dir = Direction.S;
-    //    }
-    //    //4 -> 3
-    //    if (next.X is 99 && next.Y is >= 0 and < 50)
-    //    {
-    //        next = new Position(next.Y + 50, 50);
-    //        dir = Direction.N;
-    //    }
-    //    //5 -> 6
-    //    if (next.X is 150 && next.Y is >= 50 and < 100)
-    //    {
-    //        next = new Position(next.Y + 150, 50);
-    //        dir = Direction.S;
-    //    }
-    //    //6 -> 5
-    //    if (next.X is >= 150 and < 200 && next.Y is 50)
-    //    {
-    //        next = new Position(150, next.X - 100);
-    //        dir = Direction.N;
-    //    }
-    //    return (dir, next);
-    //}
 
     public int DirectionValue(Direction d)
     {
@@ -446,8 +368,6 @@ public class Day22
         if (d == Direction.W) return 2;
         throw new Exception("unknown direction");
     }
-
-
 
     record Instruction(Direction direction, char turn, int steps)
     {

@@ -56,7 +56,7 @@ public static class ArrExtensions
         }
     }
 
-    public static IEnumerable<Position> ForEach<T>(this T[,] arr)
+    public static IEnumerable<Position> Each<T>(this T[,] arr)
     {
         for (int x = 0; x < arr.GetLength(0); x++)
         {
@@ -88,6 +88,8 @@ public static class ArrExtensions
 
 public record Direction(int Dx, int Dy)
 {
+    public static Direction None = new(0, 0);
+
     public static Direction N = new(-1, 0);
     public static Direction NW = new(-1, -1);
     public static Direction NE = new(-1, 1);
@@ -98,7 +100,17 @@ public record Direction(int Dx, int Dy)
     public static Direction E = new(0, 1);
     
     public static Direction[] All4 = new[] { N, E, S, W };
+    public static Direction[] All5 = new[] { N, E, S, W, None };
     public static Direction[] All8 = new[] { N, NE, E, SE, S, SW, W, NW };
+
+    public IEnumerable<Direction> GetSame()
+    {
+        if (this == N) return new[] { NW, N, NE };
+        if (this == E) return new[] { NE, E, SE };
+        if (this == S) return new[] { SE, S, SW };
+        if (this == W) return new[] { NW, W, SW };
+        return Enumerable.Empty<Direction>();
+    }
 
     public Direction TurnLeft()
     {
@@ -132,6 +144,15 @@ public record Direction(int Dx, int Dy)
         if (this == S) return 'v';
         if (this == E) return '>';
         if (this == W) return '<';
+        throw new Exception("unknown direction");
+    }
+
+    public static Direction FromChar(char c)
+    {
+        if (c == '^') return N;
+        if (c == 'v') return S;
+        if (c == '>') return E;
+        if (c == '<') return W;
         throw new Exception("unknown direction");
     }
 
