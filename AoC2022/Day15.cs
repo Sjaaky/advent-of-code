@@ -38,8 +38,6 @@ public class Day15
                 var sensor = new Position(int.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value));
                 var beacon = new Position(int.Parse(m.Groups[3].Value), int.Parse(m.Groups[4].Value));
                 if (beacon.Y == scanat) beaconsAtRow.Add(beacon.X);
-                //int dist = Distance(sensor, beacon);
-                //Console.WriteLine($"{sensor} {beacon} {dist}");
 
                 IntersectAt(sensor, beacon, hs, scanat);
             }
@@ -51,55 +49,38 @@ public class Day15
     [TestCase("day15example1.input", ExpectedResult = 56000011)]
     public long Part2(string input)
     {
-        Stopwatch sw = Stopwatch.StartNew();
         var lines = File.ReadAllLines(input);
-        var sensors = new List<(Position sensor, int distance)>();
-        Console.WriteLine(sw.ElapsedMilliseconds);
-        foreach (var line in lines)
+        List<(Position sensor, int distance)> sensors = ParseInput(lines);
+
+        var pairs = sensors.SelectMany(s1 => sensors.Select(s2 => (s1, s2)))
+            .Where(p => Distance(p.s1.sensor, p.s2.sensor) - (p.s1.distance + p.s2.distance) == 2);
+
+        int? a = null, b = null;
+        foreach (var pair in pairs)
         {
-            var m = r.Match(line);
-            if (m.Success)
+            var sx = Math.Sign(pair.s1.sensor.X - pair.s2.sensor.X);
+            var sy = Math.Sign(pair.s1.sensor.Y - pair.s2.sensor.Y);
+            if (sx == sy)
             {
-                var sensor = new Position(int.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value));
-                var beacon = new Position(int.Parse(m.Groups[3].Value), int.Parse(m.Groups[4].Value));
-                sensors.Add((sensor, Distance(sensor, beacon)));
+                a = pair.s1.sensor.X + pair.s1.sensor.Y - sx * (pair.s1.distance + 1);
+            }
+            else
+            {
+                b = pair.s1.sensor.X - pair.s1.sensor.Y - sx * (pair.s1.distance + 1);
             }
         }
-        Console.WriteLine(sw.ElapsedMilliseconds);
+        if (!a.HasValue || !b.HasValue) throw new Exception("no matches found");
 
-        int? a = null;
-        int? b = null;
-        for (int i = 0; i < sensors.Count; i++)
-        {
-            var b1 = sensors[i];
-            for (int j = i + 1; j < sensors.Count; j++)
-            {
-                var b2 = sensors[j];
-                var dif = Distance(b1.sensor, b2.sensor) - (b1.distance + b2.distance);
-
-                if (dif == 2)
-                {
-                    var xs = Math.Sign(b1.sensor.X - b2.sensor.X);
-                    var ys = Math.Sign(b1.sensor.Y - b2.sensor.Y);
-                    if (xs == ys)
-                    {
-                        a = b1.sensor.X + b1.sensor.Y - xs*(b1.distance + 1);
-                    }
-                    else
-                    {
-                        b = b1.sensor.X - b1.sensor.Y - xs*(b1.distance + 1);
-                    }
-                }
-                if (a.HasValue && b.HasValue) break;
-            }
-        }
         var x = (a.Value + b.Value) / 2;
         var y = (a.Value - b.Value) / 2;
-        Console.WriteLine(sw.ElapsedMilliseconds);
-        Console.WriteLine($"a={a} b={b}");
+
         return x * 4000000L + y;
+    }
+
+    public void scratchpad()
+    {
+        //Draw(sensors, new Position(x, y));
         //Console.WriteLine($"x={x} y={y}");
-        ////Draw(sensorbeacons);
 
         //Draw(matchingsensorbeacons);
 
@@ -117,7 +98,7 @@ public class Day15
         //            if (!IsPointCoveredByAny(current, sensorbeacons))
         //            {
         //                Console.WriteLine($"{sw.ElapsedMilliseconds}ms1 {current.X} {current.Y}");
- 
+
         //                var na5 = current.X + current.Y;
         //                var na6 = current.X - current.Y;
         //                Console.WriteLine($"a = {na5}, b = {na6}");
@@ -204,6 +185,23 @@ public class Day15
         //}
     }
 
+        private List<(Position sensor, int distance)> ParseInput(string[] lines)
+    {
+        var sensors = new List<(Position sensor, int distance)>();
+        foreach (var line in lines)
+        {
+            var m = r.Match(line);
+            if (m.Success)
+            {
+                var sensor = new Position(int.Parse(m.Groups[1].Value), int.Parse(m.Groups[2].Value));
+                var beacon = new Position(int.Parse(m.Groups[3].Value), int.Parse(m.Groups[4].Value));
+                sensors.Add((sensor, Distance(sensor, beacon)));
+            }
+        }
+
+        return sensors;
+    }
+
     private IEnumerable<int> Intersections((Position sensor, Position beacon, int distance) bc, (Position sensor, Position beacon, int distance) b2)
     {
         //Console.WriteLine($"{d - bc.distance + b2.distance}");
@@ -224,8 +222,9 @@ public class Day15
         }
         return false;
     }
+#pragma warning disable CA1416 // Validate platform compatibility
 
-    private void Draw(List<(Position sensor, Position beacon, int distance)> sensorbeacons)
+    private void Draw(List<(Position sensor, int distance)> sensors, Position distressPosition)
     {
         int width = 4000;
         int height = 4000;
@@ -236,50 +235,75 @@ public class Day15
             graphics.CompositingQuality = CompositingQuality.HighSpeed;
             graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
             graphics.CompositingMode = CompositingMode.SourceCopy;
-            var sensorPen = new Pen(Color.White);
-            var beaconPen = new Pen(Color.Black);
-            var linePen = new Pen(Color.Red);
-            var brush = (SolidBrush)Brushes.DarkGray;
+            
+            DrawSensors(sensors, factor, graphics);
 
-            int r = 0;
-            int g = 0;
-            int b = 0;
+            var pairs = sensors.SelectMany(s1 => sensors.Select(s2 => (s1, s2)))
+                .Where(p => Distance(p.s1.sensor, p.s2.sensor) - (p.s1.distance + p.s2.distance) == 2);
 
-            foreach (var bc in sensorbeacons)
+            List<(Position sensor, int distance)> matchingsensors = new();
+            foreach (var pair in pairs)
             {
-                brush.Color = Color.FromArgb(r % 128 + 128, g % 128 + 128, b % 128+128);
-                r += 32;
-                g += 16;
-                b += 8;
-                Point p1 = new Point((bc.sensor.X) / factor, (bc.sensor.Y - bc.distance) / factor);
-                Point p2 = new Point((bc.sensor.X + bc.distance) / factor, (bc.sensor.Y) / factor);
-                Point p3 = new Point((bc.sensor.X) / factor, (bc.sensor.Y + bc.distance) / factor);
-                Point p4 = new Point((bc.sensor.X - bc.distance) / factor, (bc.sensor.Y) / factor);
-                graphics.FillPath(brush, new GraphicsPath(
-                    new[] { p1, p2, p3, p4 },
-                    new byte[] { (byte)PathPointType.Line, (byte)PathPointType.Line, (byte)PathPointType.Line, (byte)PathPointType.Line }));
+                matchingsensors.Add(pair.s1);
+                matchingsensors.Add(pair.s2);
             }
-            foreach (var bc in sensorbeacons)
-            {
-                linePen.Color = Color.FromArgb(r %128, g%128, b%128);
-                r += 32;
-                g += 16;
-                b += 8;
-                graphics.DrawRectangle(beaconPen, (bc.beacon.X / factor) - 2, (bc.beacon.Y / factor) - 2, 4, 4);
-                graphics.DrawRectangle(sensorPen, (bc.sensor.X / factor) - 2, (bc.sensor.Y / factor) - 2, 4, 4);
-                Point p1 = new Point((bc.sensor.X) / factor, (bc.sensor.Y - bc.distance) / factor);
-                Point p2 = new Point((bc.sensor.X + bc.distance) / factor, (bc.sensor.Y) / factor);
-                Point p3 = new Point((bc.sensor.X) / factor, (bc.sensor.Y + bc.distance) / factor);
-                Point p4 = new Point((bc.sensor.X - bc.distance) / factor, (bc.sensor.Y) / factor);
-                graphics.DrawLine(linePen, p1, p2);
-                graphics.DrawLine(linePen, p2, p3);
-                graphics.DrawLine(linePen, p3, p4);
-                graphics.DrawLine(linePen, p4, p1);
-            }
+            DrawSensors(matchingsensors, factor, graphics);
 
-            bm.Save($"world.png", ImageFormat.Png);
+            var beaconPen1 = new Pen(Color.Black);
+            var beaconPen2 = new Pen(Color.White);
+            graphics.DrawRectangle(beaconPen2, (distressPosition.X / factor) - 5, (distressPosition.Y / factor) - 5, 10, 10);
+            graphics.DrawRectangle(beaconPen1, (distressPosition.X / factor) - 6, (distressPosition.Y / factor) - 6, 12, 12);
+            graphics.DrawRectangle(beaconPen2, (distressPosition.X / factor) - 7, (distressPosition.Y / factor) - 7, 14, 14);
+            //var linePen2 = new Pen(Color.White, 2.0f);
+            //graphics.DrawLine(linePen2, new Point(distressPosition.X / factor + 10, distressPosition.Y / factor - 10), new Point((distressPosition.X + distressPosition.Y) / factor, 0));
+            //graphics.DrawLine(linePen2, new Point(distressPosition.X / factor - 10, distressPosition.Y / factor - 10), new Point((distressPosition.X - distressPosition.Y) / factor, 0));
+
+            bm.Save($"world1.png", ImageFormat.Png);
         }
     }
+
+    private static void DrawSensors(List<(Position sensor, int distance)> sensors, int factor, Graphics graphics)
+    {
+        var sensorPen = new Pen(Color.White);
+        var linePen = new Pen(Color.Red);
+        var brush = (SolidBrush)Brushes.DarkGray;
+
+        int r = 0;
+        int g = 0;
+        int b = 0;
+
+        foreach (var bc in sensors)
+        {
+            brush.Color = Color.FromArgb(r % 128 + 128, g % 128 + 128, b % 128 + 128);
+            r += 5;
+            g += 11;
+            b += 37;
+            Point p1 = new Point((bc.sensor.X) / factor, (bc.sensor.Y - bc.distance) / factor);
+            Point p2 = new Point((bc.sensor.X + bc.distance) / factor, (bc.sensor.Y) / factor);
+            Point p3 = new Point((bc.sensor.X) / factor, (bc.sensor.Y + bc.distance) / factor);
+            Point p4 = new Point((bc.sensor.X - bc.distance) / factor, (bc.sensor.Y) / factor);
+            graphics.FillPath(brush, new GraphicsPath(
+                new[] { p1, p2, p3, p4 },
+                new byte[] { (byte)PathPointType.Line, (byte)PathPointType.Line, (byte)PathPointType.Line, (byte)PathPointType.Line }));
+        }
+        foreach (var bc in sensors)
+        {
+            linePen.Color = Color.FromArgb(r % 128 + 32, g % 128 + 32, b % 128 + 32);
+            r += 11;
+            g += 7;
+            b += 5;
+            graphics.DrawRectangle(sensorPen, (bc.sensor.X / factor) - 2, (bc.sensor.Y / factor) - 2, 4, 4);
+            Point p1 = new Point((bc.sensor.X) / factor, (bc.sensor.Y - bc.distance) / factor);
+            Point p2 = new Point((bc.sensor.X + bc.distance) / factor, (bc.sensor.Y) / factor);
+            Point p3 = new Point((bc.sensor.X) / factor, (bc.sensor.Y + bc.distance) / factor);
+            Point p4 = new Point((bc.sensor.X - bc.distance) / factor, (bc.sensor.Y) / factor);
+            graphics.DrawLine(linePen, p1, p2);
+            graphics.DrawLine(linePen, p2, p3);
+            graphics.DrawLine(linePen, p3, p4);
+            graphics.DrawLine(linePen, p4, p1);
+        }
+    }
+#pragma warning restore CA1416 // Validate platform compatibility
 
     private void IntersectAt(Position sensor, Position beacon, HashSet<int> hs, int y)
     {

@@ -1,13 +1,3 @@
-using FluentAssertions.Execution;
-using System.Text.RegularExpressions;
-using System;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using static System.Net.Mime.MediaTypeNames;
-using System.Numerics;
-using System.Diagnostics;
-
 namespace AoC2022;
 
 public class Day20
@@ -66,17 +56,17 @@ public class Day20
     }
 
     [TestCase("0,-1,1,2,3,4,5", ExpectedResult = "0,4,1,5,2,3,-1")]
-    [TestCase("0,1,2,3,4,5,26", ExpectedResult = "0,4,1,5,2,3,26")]
-    [TestCase("0,1,2,3,4,5,-26", ExpectedResult = "0,4,1,5,2,3,-26")]
+    [TestCase("0,1,2,3,4,5,26", ExpectedResult = "0,4,26,1,5,2,3")]
+    [TestCase("0,1,2,3,4,5,-26", ExpectedResult = "0,4,1,5,-26,2,3")]
     [TestCase("0,1,2,3,4,5,28", ExpectedResult = "0,4,1,5,28,2,3")]
-    [TestCase("0,1,2,3,4,5,-28", ExpectedResult = "0,4,1,5,-28,2,3")]
+    [TestCase("0,1,2,3,4,5,-28", ExpectedResult = "0,4,-28,1,5,2,3")]
     [TestCase("0,1,2,3,4,5,6", ExpectedResult = "0,4,1,5,2,3,6")]
-    [TestCase("-1,0,1,2,3,4,5", ExpectedResult = "0,4,1,5,2,3,-1")]
-    [TestCase("-8,0,1,2,3,4,5", ExpectedResult = "0,4,1,2,-8,5,3")]
-    [TestCase("-15,0,1,2,3,4,5", ExpectedResult = "0,4,1,2,-15,5,3")]
-    [TestCase("-15,0,1,2,3,4,26", ExpectedResult = "0,4,1,2,-15,26,3")]
-    [TestCase("-15,10,1,2,3,3,0", ExpectedResult = "0,4,1,2,-15,26,3")]
     [TestCase("1,1,1,1,0,1,1,1", ExpectedResult = "1,1,1,1,1,0,1,1")]
+    [TestCase("-1,0,1,2,3,4,5", ExpectedResult = "0,4,1,2,-1,5,3")]
+    [TestCase("-15,0,1,2,3,4,26", ExpectedResult = "0,3,26,1,4,-15,2")]
+    [TestCase("-15,0,1,2,3,4,5", ExpectedResult = "0,3,1,4,-15,5,2")]
+    [TestCase("-15,10,1,2,3,3,0", ExpectedResult = "1,3,-15,2,10,0,3")]
+    [TestCase("-8,0,1,2,3,4,5", ExpectedResult = "0,1,4,2,-8,5,3")]
     public string test1(string input)
     {
         var numbers = input.Split(",").Select(n => new NR(long.Parse(n))).ToArray();
@@ -89,9 +79,7 @@ public class Day20
     {
         checked
         {
-            NR nr0 = null;
-            Console.WriteLine($"=== Initial ===");
-            Print(target);
+            NR? nr0 = null;
             for (int m = 0; m < mixes; m++)
             {
                 foreach (var nr in numbers)
@@ -100,31 +88,15 @@ public class Day20
                     var idxo = target.IndexOf(nr);
                     if (idxo == -1) throw new Exception("not found");
 
-                    if (nr.nr == 5)
-                    {
-                        var xasdf = 12;
-                    }
-                    
-
-
-                    var idxn = idxo + nr.nr;
-                    if (idxn < 0)
-                    {
-                        idxn = (idxn % (target.Count - 1)) + target.Count - 1;
-
-                    }
-                    if (idxn >= target.Count-1)
-                    {
-                        idxn %= target.Count-1;
-                    }
-
-                    if (target.Count < 100) Console.WriteLine($"move {nr.nr} from {idxo} to {idxn}");
-                    
                     if (nr.nr != 0)
                     {
+                        var idxn = idxo + nr.nr;
+                        var cnt = target.Count - 1;
+                        idxn = ((idxn % cnt) + cnt) % cnt;
+
                         target.RemoveAt(idxo);
-                        
-                        if ((idxn == 0))
+
+                        if (idxn == 0)
                         {
                             target.Add(nr);
                         }
@@ -133,11 +105,7 @@ public class Day20
                             target.Insert((int)idxn, nr);
                         }
                     }
-
-                    if (target.Count < 100) Print(target);
                 }
-                Console.WriteLine($"=== ROUND {m} ===");
-                Print(target);
             }
 
             var idx0 = target.IndexOf(nr0);
