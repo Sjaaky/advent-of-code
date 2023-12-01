@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -28,9 +29,10 @@ public class Day17
     {
         var instructions = File.ReadAllLines(input).First();
         var blocks = File.ReadAllLines("day17.blocks").GroupedMapReduce(l => l == "", c => c, c => c).ToList();
-
+        var sw = Stopwatch.StartNew();
         var chamber = RunSimulation(instructions, blocks, 5000);
-
+        Console.WriteLine(sw.ElapsedMilliseconds);
+        sw.Restart();
         bool repetitionFound = false;
         int i1 = 0;
         int i2 = 0;
@@ -49,9 +51,13 @@ public class Day17
             }
             if (repetitionFound) break;
         }
+        Console.WriteLine(sw.ElapsedMilliseconds);
+
+
         if (repetitionFound)
         {
-            Console.WriteLine($"pattern {i1} {chamber.rocks[i1]} {i2} {chamber.rocks[i2]} {i2 - i1}: {chamber.rocks[i2] - chamber.rocks[i1]}");
+            //Console.WriteLine($"pattern {i1} {chamber.rocks[i1]} {i2} {chamber.rocks[i2]} {i2 - i1}: {chamber.rocks[i2] - chamber.rocks[i1]}");
+            //Console.WriteLine(chamber.ToString(i1, i2));
             long repHeight = i2 - i1;
             long repRocks = chamber.rocks[i2] - chamber.rocks[i1];
 
@@ -101,7 +107,6 @@ public class Day17
                 //Console.WriteLine(chamber.Print());
             }
         }
-        Console.WriteLine(chamber);
         return chamber;
     }
 
@@ -109,8 +114,8 @@ public class Day17
     {
         const string wall = "|.......|";
         int top = 0;
-        string[] currentBlock = null;
-        Position currentBlockPosition;
+        string[]? currentBlock = null;
+        Position? currentBlockPosition = null;
 
         public List<char[]> chamber = new() { "+-------+".ToCharArray() };
         public List<int> rocks = new() { 0 };
@@ -132,6 +137,7 @@ public class Day17
 
         public bool Push(Direction dir)
         {
+            if (currentBlockPosition == null || currentBlock == null) throw new Exception("call AddBlock first");
             var x = 0;
             var newpos = currentBlockPosition.Add(dir);
             foreach (var line in currentBlock)
@@ -155,6 +161,7 @@ public class Day17
 
         public bool Fall()
         {
+            if (currentBlockPosition == null || currentBlock == null) throw new Exception("call AddBlock first");
             var x = 0;
             var newpos = currentBlockPosition.Add(Direction.N);
             foreach (var line in currentBlock)
@@ -179,6 +186,7 @@ public class Day17
 
         public void Solidify()
         {
+            if (currentBlockPosition == null || currentBlock == null) throw new Exception("call AddBlock first");
             var x = 0;
             foreach (var line in currentBlock)
             {
@@ -203,6 +211,8 @@ public class Day17
 
         public string Print()
         {
+            if (currentBlockPosition == null || currentBlock == null) throw new Exception("call AddBlock first");
+
             StringBuilder sb = new();
             var l = chamber.Count;
 
@@ -242,15 +252,19 @@ public class Day17
             Stopped
         }
 
-        //public string Print()
-        //{
-        //    return string.Join("\r\n", Enumerable.Reverse(chamber).Select(c => new string(c, 0, c.Length)));
-        //}
-
         public override string ToString()
         {
             return string.Join("\r\n", Enumerable.Reverse(chamber).Select(c => new string(c, 0, c.Length)));
         }
 
+        public string ToString(int i1, int i2)
+        {
+            return string.Join("\r\n", Enumerable.Reverse(chamber).Select((c, i) =>
+            {
+                if (i == i1) return new string(c, 0, c.Length) + "<<<< i1";
+                if (i == i2) return new string(c, 0, c.Length) + "<<<< i2";
+                return new string(c, 0, c.Length);
+            }));
+        }
     }
 }
