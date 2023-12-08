@@ -58,18 +58,4 @@ public class Day06
 
         return sum;
     }
-
-    private (int, int) ReadInt(string line, int p)
-    {
-        int nr = 0;
-        int c = p;
-        while (c < line.Length && line[c] == ' ') { c++; }
-        while (c < line.Length && char.IsDigit(line[c]))
-        {
-            nr = (nr * 10) + (line[c] - '0');
-            c++;
-        }
-        return (nr, c);
-    }
-
 }
